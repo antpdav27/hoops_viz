@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- saved from url=(0061)file:///Users/davenport/Downloads/nba_2026_3pt_scatter_7.html -->
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html>
+<head>
+<meta charset="UTF-8">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -9,21 +9,28 @@ body {
   color: #e6edf3;
   font-family: 'Segoe UI', Arial, sans-serif;
   padding: 24px 20px 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 h2 {
   text-align: center;
   font-size: 16px;
   font-weight: 700;
   color: #c9d1d9;
-  margin-bottom: 4px;
-  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+  letter-spacing: 0.08em;
 }
-.subtitle {
-  text-align: center;
-  font-size: 12px;
+.legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 11px;
   color: #8b949e;
-  margin-bottom: 18px;
+  letter-spacing: 0.08em;
 }
+canvas#lg { width: 180px; height: 13px; border-radius: 6px; display: block; }
 #chart-wrap { position: relative; width: 100%; }
 canvas#c { display: block; width: 100%; }
 #tooltip {
@@ -39,39 +46,29 @@ canvas#c { display: block; width: 100%; }
   z-index: 10;
   min-width: 170px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 #tooltip .tn { font-weight: 700; font-size: 13px; }
 #tooltip .st { color: #8b949e; }
 #tooltip .vl { color: #e6edf3; font-weight: 600; }
-.legend-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 12px;
-  font-size: 11px;
-  color: #8b949e;
-}
-canvas#lg { width: 180px; height: 13px; border-radius: 6px; display: block; }
 </style>
 </head>
 <body>
 <h2>NBA 2025–26 · Wins vs. 3-Pointers Made per Game</h2>
-<div class="subtitle">Bubble color = 3PT% &nbsp;·&nbsp; 🔵 Lower % &nbsp;→&nbsp; 🔴 Higher %</div>
-<div id="chart-wrap">
-  <canvas id="c" width="799" height="503"></canvas>
-  <div id="tooltip" style="display: none; left: 421px; top: 114.5px;"><div class="tn" style="color:rgb(48,208,128)">Boston Celtics</div>
-      <div><span class="st">Wins: </span><span class="vl">56</span></div>
-      <div><span class="st">3PM/G: </span><span class="vl">15.5</span></div>
-      <div><span class="st">3PT%: </span><span class="vl">36.7%</span></div></div>
-</div>
+
 <div class="legend-row">
   <span>Low 3PT%</span>
   <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
     <canvas id="lg" width="180" height="13"></canvas>
-    <div id="lg-labels" style="display:flex;justify-content:space-between;width:180px;font-size:10px;color:#8b949e;"><span style="text-align: left;">34%</span><span style="text-align: center;">35%</span><span style="text-align: center;">36%</span><span style="text-align: center;">37%</span><span style="text-align: center;">38%</span><span style="text-align: center;">39%</span><span style="text-align: right;">40%</span></div>
+    <div id="lg-labels" style="display:flex;justify-content:space-between;width:180px;font-size:10px;color:#8b949e;letter-spacing:0.06em;"></div>
   </div>
   <span>High 3PT%</span>
+</div>
+
+<div id="chart-wrap">
+  <canvas id="c"></canvas>
+  <div id="tooltip"></div>
 </div>
 
 <script>
@@ -170,25 +167,25 @@ function draw(){
 
   // axis labels
   ctx.fillStyle='#8b949e'; ctx.font=`bold ${fs+1}px Arial`; ctx.textAlign='center';
-  ctx.fillText('Wins', W/2, H-10);
+  ctx.fillText('WINS', W/2, H-10);
   ctx.save(); ctx.translate(14, H/2); ctx.rotate(-Math.PI/2);
-  ctx.fillText('3PM per Game', 0, 0); ctx.restore();
+  ctx.fillText('3PM PER GAME', 0, 0); ctx.restore();
 
   // Compute positions
   const positions = teams.map(t=>({ t, x:px(t.wins,W), y:py(t.fg3m,H) }));
 
-  // Detect which bubbles are overlapped (covered by a later-drawn bubble)
+  // Detect overlapping bubbles
   const overlapped = new Set();
   for(let i=0;i<positions.length;i++){
     for(let j=i+1;j<positions.length;j++){
       const a=positions[i], b=positions[j];
       if(Math.hypot(a.x-b.x, a.y-b.y) < R*1.8){
-        overlapped.add(i); // mark the earlier one as needing a callout
+        overlapped.add(i);
       }
     }
   }
 
-  // Draw glows first
+  // Draw glows
   positions.forEach(({t,x,y})=>{
     const [r,g,b]=heatColor(t.fg3pct);
     const grd=ctx.createRadialGradient(x,y,0,x,y,R*2);
@@ -210,7 +207,7 @@ function draw(){
     ctx.lineWidth=1.5; ctx.stroke();
   });
 
-  // Draw in-bubble abbreviations for non-overlapped bubbles
+  // In-bubble labels for non-overlapped
   const lfs=Math.max(7,Math.round(R*0.72));
   positions.forEach(({t,x,y},i)=>{
     if(overlapped.has(i)) return;
@@ -219,36 +216,31 @@ function draw(){
     ctx.fillText(t.abbr, x, y+lfs*0.38);
   });
 
-  // Draw leader lines + callout labels for overlapped bubbles
-  // Place callouts above the bubble, staggered to avoid each other
+  // Leader line callouts for overlapped
   const calloutFs = Math.max(8, Math.round(W/90));
-  const usedCalloutY = []; // track used Y positions for staggering
+  const usedCallouts = [];
 
   positions.forEach(({t,x,y},i)=>{
     if(!overlapped.has(i)) return;
     const [r,g,b]=heatColor(t.fg3pct);
 
-    // Place callout up and to the right
     const offset = (R + 22) / 2;
     let cx = x + offset;
     let cy = y - offset;
 
-    // Stagger if too close to another callout
-    for(const used of usedCalloutY){
+    for(const used of usedCallouts){
       if(Math.abs(used.y - cy) < 14 && Math.abs(used.x - cx) < 40){
         cy = used.y - 14;
       }
     }
     cy = Math.max(PAD.top + calloutFs, cy);
-    usedCalloutY.push({x: cx, y: cy});
+    usedCallouts.push({x: cx, y: cy});
 
-    // Leader line from bubble edge toward callout
     const angle = Math.atan2(cy - y, cx - x);
     const lx1 = x + Math.cos(angle) * R;
     const ly1 = y + Math.sin(angle) * R;
 
-    const [r2,g2,b2]=heatColor(t.fg3pct);
-    ctx.strokeStyle=`rgba(${r2},${g2},${b2},0.75)`;
+    ctx.strokeStyle=`rgba(${r},${g},${b},0.75)`;
     ctx.lineWidth=1;
     ctx.setLineDash([3,2]);
     ctx.beginPath();
@@ -257,7 +249,6 @@ function draw(){
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Callout label in white
     ctx.font=`bold ${calloutFs}px Arial`; ctx.textAlign='left';
     ctx.fillStyle='rgba(255,255,255,0.9)';
     ctx.fillText(t.abbr, cx, cy);
@@ -287,24 +278,22 @@ canvas.addEventListener('mousemove', e=>{
   if(found){
     const [r,g,b]=heatColor(found.fg3pct);
     tip.style.display='block';
-    // Position tooltip, flipping left if near right edge
-    const tipW = 180;
-    const tipH = 90;
-    let tx = e.clientX - rect.left + 16;
-    let ty = e.clientY - rect.top - 14;
-    if (tx + tipW > rect.width) tx = e.clientX - rect.left - tipW - 16;
-    if (ty - tipH < 0) ty = e.clientY - rect.top + 16;
-    tip.style.left = tx + 'px';
-    tip.style.top = ty + 'px';
-    tip.innerHTML=`<div class="tn" style="color:rgb(${r},${g},${b})">${found.name}</div>
+    const tipW=180, tipH=90;
+    let tx=e.clientX-rect.left+16;
+    let ty=e.clientY-rect.top-14;
+    if(tx+tipW>rect.width) tx=e.clientX-rect.left-tipW-16;
+    if(ty-tipH<0) ty=e.clientY-rect.top+16;
+    tip.style.left=tx+'px';
+    tip.style.top=ty+'px';
+    tip.innerHTML=`<div class="tn" style="color:rgb(${r},${g},${b})">${found.name.toUpperCase()}</div>
       <div><span class="st">Wins: </span><span class="vl">${found.wins}</span></div>
       <div><span class="st">3PM/G: </span><span class="vl">${found.fg3m.toFixed(1)}</span></div>
-      <div><span class="st">3PT%: </span><span class="vl">${(found.fg3pct*100).toFixed(1)}%</span></div>`;
+      <div><span class="st">3PT: </span><span class="vl">${(found.fg3pct*100).toFixed(1)}%</span></div>`;
   } else { tip.style.display='none'; }
 });
 canvas.addEventListener('mouseleave',()=>tip.style.display='none');
 
-// Legend
+// Legend gradient
 const lg=document.getElementById('lg');
 const lc=lg.getContext('2d');
 const grd=lc.createLinearGradient(0,0,180,0);
@@ -315,20 +304,17 @@ for(let i=0;i<=20;i++){
 }
 lc.fillStyle=grd; lc.fillRect(0,0,180,13);
 
-// Add numeric labels below gradient
-const labelEl = document.getElementById('lg-labels');
-const labelVals = [34, 35, 36, 37, 38, 39, 40];
-labelVals.forEach((v, i) => {
-  const span = document.createElement('span');
-  span.textContent = v + '%';
-  span.style.textAlign = i === 0 ? 'left' : i === labelVals.length - 1 ? 'right' : 'center';
+// Legend labels — single set, no % symbol
+const labelEl=document.getElementById('lg-labels');
+const labelVals=[34,35,36,37,38,39,40];
+labelVals.forEach((v,i)=>{
+  const span=document.createElement('span');
+  span.textContent=v;
   labelEl.appendChild(span);
 });
-labelEl.style.width = '180px';
 
 resize();
 window.addEventListener('resize',resize);
 </script>
-
-
-</body></html>
+</body>
+</html>
